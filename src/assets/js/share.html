@@ -1,0 +1,232 @@
+<extend name="../base" />
+<block name="style">
+	<meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+	<meta name="HandheldFriendly" content="true"/>
+	<meta name="MobileOptimized" content="320"/>
+	<link href="__TMPL__/public/assets/mount_tai/css/view.css" rel="stylesheet">
+	<script type="text/javascript">
+        var shares=null;
+        var sweixin=null;
+        var buttons=[
+            {title:'微信好友',extra:{scene:'WXSceneSession'}},
+            {title:'微信朋友圈',extra:{scene:'WXSceneTimeline'}}
+        ];
+        
+        function afterShare() {
+
+            var mid = "{$house.id}";
+
+            var token = localStorage.getItem('yfdr_token');
+
+            mui.ajax(route.share, {
+                data: {
+                    id: mid
+                },
+                dataType: 'json',//服务器返回json格式数据
+                type: 'post',//HTTP请求类型
+                timeout: 4500,//超时时间设置为4.5秒；
+                headers: {
+                    'Content-Type': 'application/json',
+                    "XX-Token": token,
+                    "XX-Device-Type": "mobile"
+                },
+                success: function (data) {
+                    plus.nativeUI.alert(data.msg)
+                },
+                error: function (xhr, type, errorThrown) {
+                    //异常处理；
+                    if (type == 'timeout') {
+                        mui.toast('网络繁忙~！');
+                    } else {
+                        mui.toast('系统繁忙~！');
+                    }
+                }
+            });
+        }
+        
+        // H5 plus事件处理
+        function plusReady(){
+            updateSerivces();
+        }
+        if(window.plus){
+            plusReady();
+        }else{
+            document.addEventListener('plusready', plusReady, false);
+        }
+        /**
+         * 更新分享服务
+         */
+        function updateSerivces(){
+            plus.share.getServices(function(s){
+                shares={};
+                for(var i in s){
+                    var t=s[i];
+                    shares[t.id]=t;
+                }
+                sweixin=shares['weixin'];
+            }, function(e){
+                // outSet('获取分享服务列表失败：'+e.message);
+            });
+        }
+
+        // 分享网页
+        function shareWeb(){
+            var msg={type:'web',thumbs:['_www/logo.png']};
+            msg.href        = "{:url('portal/house/view',['id' => input('id')],'html',true)}";
+            msg.title       = document.querySelector('#house-title').innerHTML.replace(/(^\s*)|(\s*$)/g, "");
+            msg.content     ='我正在使用铺旺宝查找附近店铺，赶紧跟我一起来体验！';
+            sweixin?plus.nativeUI.actionSheet({title:'分享网页到微信',cancel:'取消',buttons:buttons}, function(e){
+                (e.index>0)&&share(sweixin, msg, buttons[e.index-1]);
+            }):plus.nativeUI.alert('当前环境不支持微信分享操作!');
+        }
+
+        // 分享
+        function share(srv, msg, button){
+            outSet('分享操作：');
+            if(!srv){
+                // outLine('无效的分享服务！');
+                return;
+            }
+            button&&(msg.extra=button.extra);
+            // 发送分享
+            if(srv.authenticated){
+                // outLine('---已授权---');
+                doShare(srv, msg);
+            }else{
+                // outLine('---未授权---');
+                srv.authorize(function(){
+                    doShare(srv, msg);
+                }, function(e){
+                    // outLine('认证授权失败：'+JSON.stringify(e));
+                });
+            }
+        }
+        // 发送分享
+        function doShare(srv, msg){
+            // outLine(JSON.stringify(msg));
+            srv.send(msg, function(){
+                // outLine('分享到"'+srv.description+'"成功！');
+				//分享成功后操作
+                afterShare()
+            }, function(e){
+                // outLine('分享到"'+srv.description+'"失败: '+JSON.stringify(e));
+            });
+        }
+	</script>
+</block>
+<style type="text/css">
+	.mui-icon-right-nav.share {
+		font-size: 14px;
+		;
+	}
+</style>
+
+<block name="content">
+	<header id="header" class="mui-bar mui-bar-nav padding-t-0 ">
+		<a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left" href="javascript:window.location.go(-1)"></a>
+		<h1 class="mui-title">我的房屋详情</h1>
+		<if condition="$house['cr_examine'] == 1">
+		<em class="mui-icon mui-icon-right-nav mui-pull-right share" onclick="shareWeb()">分享</em>
+		</if>
+	</header>
+
+
+	<div id="share-content" class="mui-content padding-t-0" style="margin-top: 44px">
+		<div class="mui-content padding-t-0">
+			<div class="mui-card">
+				<div class="mui-card-content">
+					<img style="width: 100%" src="__TMPL__/public/assets/mount_tai/images/house_album.png" alt="">
+				</div>
+			</div>
+		</div>
+		<div class="content-padded">
+			<div class="view-title" id="house-title">
+				{$house.title}
+			</div>
+			<php>
+				$expense_params = $house -> calcMerchExpense();
+			</php>
+			<div class="view-price">
+				￥<font>{$expense_params.repay?:'面议'}</font>/月[可年付]
+			</div>
+			<div class="house-view-info">
+				<span>发布于{:date('Y-m-d',$house['create_time'])}</span>
+				<span class="mui-text-center">已有{$house.house.appoint_count}人预约</span>
+				<span class="mui-text-right">已有{$house.hits}人浏览</span>
+			</div>
+
+			<div class="house-view-attr mui-clearfix">
+				<ul class="house-view-attr-list mui-clearfix">
+					<li class="house-view-attr-item">
+						<div class="house-view-attr-title">房源面积:</div>
+						<div class="house-view-attr-right">{$house.house.area|default='未知'}平米</div>
+					</li>
+					<li class="house-view-attr-item">
+						<div class="house-view-attr-title">房源类型:</div>
+						<div class="house-view-attr-right">{$house.house.house_type_text}</div>
+					</li>
+					<li class="house-view-attr-item">
+						<div class="house-view-attr-title">楼&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;层:</div>
+						<div class="house-view-attr-right">{$house.house.floor}层</div>
+					</li>
+					<li class="house-view-attr-item">
+						<div class="house-view-attr-title">房源状态:</div>
+						<div class="house-view-attr-right">{$house.status}</div>
+					</li>
+					<li class="house-view-attr-item">
+						<div class="house-view-attr-title">起租期限:</div>
+						<div class="house-view-attr-right">12个月</div>
+					</li>
+					<li class="house-view-attr-item">
+						<div class="house-view-attr-title">付款方式:</div>
+						<div class="house-view-attr-right">年缴租金/月缴租金</div>
+					</li>
+					<li class="house-view-attr-item" style="width: 100%;">
+						<div class="house-view-attr-title">周围情况:</div>
+						<div class="house-view-attr-right">{$house.house.desc?:'暂无周围情况描述'}</div>
+					</li>
+					<li class="house-view-attr-item">
+						<div class="house-view-attr-title">历史经营:</div>
+						<div class="house-view-attr-right">{$house.house.operate?:'暂无历史经营信息'}</div>
+					</li>
+				</ul>
+			</div>
+		</div>
+		<div class="content-padded house-content-padded">
+			<div class="house-title">房源描述</div>
+			<div class="house-content house-content-desc" id="house-content-desc">
+				{$house.house.desc}
+			</div>
+		</div>
+		<div class="qr-code" style="text-align: center;display: none;">
+			<img src="{$qrcode}" alt="" style="width: 50%;margin:0 auto;">
+		</div>
+	</div>
+
+	<style>
+		.mui-backdrop{
+			text-align: center;
+		}
+		.mask-img-box{
+			overflow-y: scroll;
+			text-align: center;
+			height: 100%;
+		}
+		.qr-code{
+			padding: 25px 0 50px 0;
+		}
+		.mui-bar em.share.mui-icon{
+			font-size: 0.32rem;
+			margin-top:0.12rem;
+		}
+	</style>
+</block>
+<block name="footer">
+	<div id="outpos"/>
+	<div id="output" style="display: none;">
+		For print output~.~!
+	</div>
+</block>
+<block name="script">
+
+</block>
