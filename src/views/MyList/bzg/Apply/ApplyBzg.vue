@@ -112,7 +112,8 @@
               }
             }, 1000);
             this.getPhoneYZM(qs.stringify({
-              username: this.phone
+              username: this.phone,
+              is_captcha: 0
             }))
           }
         }

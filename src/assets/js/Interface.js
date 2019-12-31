@@ -43,6 +43,8 @@ const UrlAdress = 'http://192.168.1.106',
         orderInfo : UrlHost+'/api/home/order/orderInfo',                                        //订单详情
         payHandsel: UrlHost+'/api/home/order/payHandsel',                                       //支付定金
         createCaptcha:UrlHost+'/api/user/createCaptcha' ,                                       //生成验证码图片
+        getImg : UrlHost + '/api/user/captcha',                                                 //请求图片
+
     }
    
 

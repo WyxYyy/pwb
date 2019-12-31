@@ -69,7 +69,7 @@
               unique_id: this.unique_id,
               captcha_code: this.value
             }
-            this.get('http://192.168.1.106/YueFuDaRen/public/api/user/captcha', 3)
+            this.get(this.Interface.config.getImg, 3)
             this.$emit('getUnique', emitData)
           } else if (index == 2) {
             // console.log(res)
